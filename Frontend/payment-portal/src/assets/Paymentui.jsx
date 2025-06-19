@@ -1,82 +1,80 @@
 import React, { useState } from "react";
-import axios from "axios";
 
-const PaymentUI = () => {
-  const [amount, setAmount] = useState("");
-  const [productName, setProductName] = useState("");
-  const [orderId, setOrderId] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+const API_BASE = "http://localhost:8000/api/khalti"; // Update if your backend runs elsewhere
 
-  const handlePayment = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+export default function PaymentUI() {
+  const [banks, setBanks] = useState([]);
+  const [initiateResult, setInitiateResult] = useState(null);
+  const [lookupResult, setLookupResult] = useState(null);
 
-    try {
-      const payload = {
-        return_url: "https://example.com/payment/",
-        website_url: "https://example.com/",
-        amount: parseInt(amount),
-        purchase_order_id: orderId,
-        purchase_order_name: productName,
-        customer_info: {
-          name: "Test User",
-          email: "test@example.com",
-          phone: "9800000000"
-        }
-      };
-      const res = await axios.post("http://127.0.0.1:8000/khalti/epayment/initiate/", payload);
-      if (res.data.status === "success" && res.data.data.payment_url) {
-        window.location.href = res.data.data.payment_url;
-      } else {
-        alert("Payment initiation failed: " + JSON.stringify(res.data.data));
-      }
-    } catch (err) {
-      alert("Payment initiation failed. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+  // Fetch bank list
+  const fetchBanks = async () => {
+    const res = await fetch(`${API_BASE}/bank-list/?payment_type=ebanking`);
+    const data = await res.json();
+    setBanks(data);
+  };
+
+  // Initiate payment
+  const initiatePayment = async (payload) => {
+    const res = await fetch(`${API_BASE}/epayment/initiate/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    setInitiateResult(data);
+  };
+
+  // Lookup payment
+  const lookupPayment = async (payload) => {
+    const res = await fetch(`${API_BASE}/epayment/lookup/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    setLookupResult(data);
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: "40px auto", padding: 24, border: "1px solid #ddd", borderRadius: 8 }}>
-      <h2>Khalti Payment</h2>
-      <form onSubmit={handlePayment}>
-        <div style={{ marginBottom: 12 }}>
-          <label>Amount (in paisa):</label>
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label>Product Name:</label>
-          <input
-            type="text"
-            value={productName}
-            onChange={(e) => setProductName(e.target.value)}
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
-        </div>
-        <div style={{ marginBottom: 16 }}>
-          <label>Order ID:</label>
-          <input
-            type="text"
-            value={orderId}
-            onChange={(e) => setOrderId(e.target.value)}
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
-        </div>
-        <button type="submit" style={{ width: "100%", padding: 10, background: "#5c2d91", color: "#fff", border: "none", borderRadius: 4 }} disabled={isLoading}>
-          {isLoading ? "Processing..." : "Pay with Khalti"}
-        </button>
-      </form>
+    <div>
+      <button onClick={fetchBanks}>Fetch Banks</button>
+      <ul>
+        {banks.map((bank) => (
+          <li key={bank.idx}>{bank.name}</li>
+        ))}
+      </ul>
+      <button
+        onClick={() =>
+          initiatePayment({
+            // Fill with required payload fields
+            return_url: "http://localhost:5173/success",
+            website_url: "http://localhost:5173",
+            amount: 1000,
+            purchase_order_id: "order123",
+            purchase_order_name: "Test Order",
+            customer_info: {
+              name: "John Doe",
+              email: "john@example.com",
+              phone: "9800000000",
+            },
+          })
+        }
+      >
+        Initiate Payment
+      </button>
+      {initiateResult && <pre>{JSON.stringify(initiateResult, null, 2)}</pre>}
+
+      <button
+        onClick={() =>
+          lookupPayment({
+            pidx: "your_pidx_here", // Replace with actual pidx from initiate response
+          })
+        }
+      >
+        Lookup Payment
+      </button>
+      {lookupResult && <pre>{JSON.stringify(lookupResult, null, 2)}</pre>}
     </div>
   );
-};
-
-export default PaymentUI;
+}

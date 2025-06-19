@@ -127,3 +127,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+
+KHALTI_SECRET_KEY = "59fc9e58316142ec81decf458444fdec"
+KHALTI_VERIFY_URL = "https://khalti.com/api/v2/payment/verify/"
